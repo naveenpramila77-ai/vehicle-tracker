@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrackFlow — Real-Time Vehicle Tracking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #060a14;
+      --surface: #0d1526;
+      --border: rgba(99, 179, 237, 0.12);
+      --accent: #00d4ff;
+      --accent2: #7b61ff;
+      --text: #e8f4ff;
+      --muted: #6b8caa;
+      --success: #00e5a0;
+      --danger: #ff4d6d;
+      --card: rgba(13, 21, 38, 0.9);
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .page {
+      display: none;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .page.active {
+      display: flex;
+    }
+
+    /* LOGIN */
+    #login-page {
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 52px 44px;
+      width: 100%;
+      max-width: 440px;
+      backdrop-filter: blur(24px);
+      box-shadow: 0 0 80px rgba(0, 212, 255, 0.07), 0 32px 64px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .login-card::after {
+      content: '';
+      position: absolute;
+      bottom: -80px;
+      left: -40px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(123, 97, 255, 0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+    }
+
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+    }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span {
+      color: var(--accent);
+    }
+
+    .login-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .login-sub {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .tab-row {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 28px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      transition: all .25s;
+      border: none;
+      background: transparent;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(0, 212, 255, 0.25);
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .field input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+    }
+
+    .field input::placeholder {
+      color: var(--muted);
+      opacity: 0.6;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: transform .2s, box-shadow .2s, opacity .2s;
+      box-shadow: 0 4px 24px rgba(0, 212, 255, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 32px rgba(0, 212, 255, 0.35);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary.loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .error-msg {
+      background: rgba(255, 77, 109, 0.1);
+      border: 1px solid rgba(255, 77, 109, 0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #ff7a90;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .error-msg.show {
+      display: block;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* MAP PAGE */
+    #map-page {
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+      background: rgba(6, 10, 20, 0.92);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+      position: relative;
+      gap: 16px;
+    }
+
+    .topbar-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .topbar-logo span {
+      color: var(--accent);
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 229, 160, 0.08);
+      border: 1px solid rgba(0, 229, 160, 0.2);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--success);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite;
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .5;
+        transform: scale(.8)
+      }
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .btn-logout {
+      padding: 8px 16px;
+      background: rgba(255, 77, 109, 0.1);
+      border: 1px solid rgba(255, 77, 109, 0.25);
+      border-radius: 8px;
+      color: #ff7a90;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(255, 77, 109, 0.2);
+    }
+
+    #map-container {
+      flex: 1;
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      min-height: calc(100vh - 65px);
+    }
+
+    .info-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 22px;
+      backdrop-filter: blur(20px);
+      min-width: 240px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+    }
+
+    .info-panel h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--accent);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 8px;
+      gap: 12px;
+    }
+
+    .info-row .label {
+      color: var(--muted);
+    }
+
+    .info-row .val {
+      font-weight: 500;
+      font-size: 11px;
+      word-break: break-all;
+    }
+
+    .share-btn {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: all .2s;
+    }
+
+    .share-btn:hover {
+      opacity: 0.9;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      right: 24px;
+      background: var(--success);
+      color: #000;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 999;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all .3s;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    @media(max-width:480px) {
+      .login-card {
+        padding: 36px 24px
+      }
+
+      .info-panel {
+        left: 12px;
+        right: 12px;
+        bottom: 12px
+      }
+
+      .topbar {
+        padding: 12px 16px
+      }
+
+      .user-info span {
+        display: none
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <!-- LOGIN PAGE -->
+  <div class="page active" id="login-page">
+    <div class="login-card">
+      <div class="logo-wrap">
+        <div class="logo-icon">🛰️</div>
+        <div class="logo-text">Track<span>Flow</span></div>
+      </div>
+      <div class="login-title">Welcome back</div>
+      <div class="login-sub">Sign in to track your vehicle in real time</div>
+      <div class="tab-row">
+        <button class="tab active" id="tab-login" onclick="setTab('login',this)">Sign In</button>
+        <button class="tab" id="tab-register" onclick="setTab('register',this)">Register</button>
+      </div>
+      <div class="field"><label>Email address</label><input id="email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="field"><label>Password</label><input id="password" type="password" placeholder="••••••••" /></div>
+      <div id="name-field" class="field" style="display:none;"><label>Full Name</label><input id="fullname"
+          placeholder="John Doe" /></div>
+      <button class="btn-primary" id="auth-btn" onclick="handleAuth()"><span id="btn-label">Sign In</span></button>
+      <div class="error-msg" id="error-msg"></div>
+      <div class="divider">secured by firebase</div>
+      <div style="text-align:center;font-size:12px;color:var(--muted);">Your location is encrypted &amp; only visible to
+        admins</div>
+    </div>
+  </div>
+
+  <!-- MAP PAGE -->
+  <div class="page" id="map-page">
+    <div class="topbar">
+      <div class="topbar-logo">Track<span>Flow</span></div>
+      <div class="status-pill">
+        <div class="status-dot"></div><span>Live Tracking</span>
+      </div>
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <span id="user-email-display"></span>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="info-panel">
+        <h3>📍 My Location</h3>
+        <div class="info-row"><span class="label">Latitude</span><span class="val" id="lat-display">—</span></div>
+        <div class="info-row"><span class="label">Longitude</span><span class="val" id="lng-display">—</span></div>
+        <div class="info-row"><span class="label">Accuracy</span><span class="val" id="acc-display">—</span></div>
+        <div class="info-row"><span class="label">Last Update</span><span class="val" id="time-display">—</span></div>
+        <button class="share-btn" onclick="shareLocation()">📤 Share My Location</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+
+    // =====================================================
+    // 🔥 REPLACE WITH YOUR FIREBASE CONFIG BELOW
+    // =====================================================
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfKWQKoAPMBWlzGkOph3jjPKCoFYz5Ao0",
+      authDomain: "tracker-17e9e.firebaseapp.com",
+      projectId: "tracker-17e9e",
+      storageBucket: "tracker-17e9e.firebasestorage.app",
+      messagingSenderId: "272449623977",
+      appId: "1:272449623977:web:7dc3fcc24203ec6aa8d6b8",
+      measurementId: "G-4KW91JY3VR"
+    };
+    // =====================================================
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let map, marker, watchId;
+    let mode = 'login';
+
+    window.setTab = (tab, el) => {
+      mode = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('btn-label').textContent = tab === 'login' ? 'Sign In' : 'Create Account';
+      document.getElementById('name-field').style.display = tab === 'register' ? 'block' : 'none';
+      document.getElementById('error-msg').classList.remove('show');
+    };
+
+    window.handleAuth = async () => {
+      const email = document.getElementById('email').value.trim();
+      const pass = document.getElementById('password').value;
+      const btn = document.getElementById('auth-btn');
+      btn.classList.add('loading'); btn.disabled = true;
+      document.getElementById('error-msg').classList.remove('show');
+      try {
+        if (mode === 'register') {
+          const name = document.getElementById('fullname').value.trim();
+          const cred = await createUserWithEmailAndPassword(auth, email, pass);
+          if (name) await updateProfile(cred.user, { displayName: name });
+        } else {
+          await signInWithEmailAndPassword(auth, email, pass);
+        }
+      } catch (e) {
+        showError(friendlyError(e.code));
+        btn.classList.remove('loading'); btn.disabled = false;
+      }
+    };
+
+    window.logout = async () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+      await signOut(auth);
+    };
+
+    window.shareLocation = () => {
+      const lat = document.getElementById('lat-display').textContent;
+      const lng = document.getElementById('lng-display').textContent;
+      if (lat === '—') { showToast('⏳ Waiting for GPS…'); return; }
+      const url = `https://www.google.com/maps?q=${lat},${lng}`;
+      navigator.clipboard.writeText(url).then(() => showToast('📋 Link copied!')).catch(() => window.open(url, '_blank'));
+    };
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        document.getElementById('login-page').classList.remove('active');
+        document.getElementById('map-page').classList.add('active');
+        document.getElementById('user-email-display').textContent = user.email || '';
+        document.getElementById('user-avatar').textContent = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+        startTracking(user);
+      } else {
+        document.getElementById('login-page').classList.add('active');
+        document.getElementById('map-page').classList.remove('active');
+        document.getElementById('auth-btn').classList.remove('loading');
+        document.getElementById('auth-btn').disabled = false;
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+      }
+    });
+
+    function startTracking(user) {
+      initMap();
+      if (!navigator.geolocation) { showToast('❌ Geolocation not supported'); return; }
+      watchId = navigator.geolocation.watchPosition(async pos => {
+        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+        document.getElementById('lat-display').textContent = lat.toFixed(6);
+        document.getElementById('lng-display').textContent = lng.toFixed(6);
+        document.getElementById('acc-display').textContent = `±${Math.round(accuracy)}m`;
+        document.getElementById('time-display').textContent = new Date().toLocaleTimeString();
+        updateMapMarker(lat, lng);
+        try {
+          await setDoc(doc(db, 'locations', user.uid), {
+            uid: user.uid, email: user.email,
+            displayName: user.displayName || '',
+            lat, lng, accuracy,
+            updatedAt: serverTimestamp(),
+            updatedAtISO: new Date().toISOString()
+          });
+        } catch (err) { console.error('Firestore:', err); }
+      }, err => showToast('📍 ' + err.message), { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 });
+    }
+
+    function initMap() {
+      if (map) return;
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 20.5937, lng: 78.9629 }, zoom: 5,
+        styles: darkMapStyle(), mapTypeControl: false, streetViewControl: false
+      });
+    }
+
+    function updateMapMarker(lat, lng) {
+      const pos = { lat, lng };
+      if (!marker) {
+        marker = new google.maps.Marker({
+          position: pos, map, title: 'My Vehicle',
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 12, fillColor: '#00d4ff', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 }
+        });
+      } else { marker.setPosition(pos); }
+      map.panTo(pos);
+      if (map.getZoom() < 15) map.setZoom(15);
+    }
+
+    function darkMapStyle() {
+      return [
+        { elementType: "geometry", stylers: [{ color: "#0d1526" }] },
+        { elementType: "labels.text.stroke", stylers: [{ color: "#0d1526" }] },
+        { elementType: "labels.text.fill", stylers: [{ color: "#6b8caa" }] },
+        { featureType: "road", elementType: "geometry", stylers: [{ color: "#1a2640" }] },
+        { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#1e3a5f" }] },
+        { featureType: "water", elementType: "geometry", stylers: [{ color: "#060a14" }] },
+        { featureType: "poi", stylers: [{ visibility: "off" }] },
+        { featureType: "transit", stylers: [{ visibility: "off" }] }
+      ];
+    }
+
+    function showError(msg) { const el = document.getElementById('error-msg'); el.textContent = msg; el.classList.add('show'); }
+    function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+    function friendlyError(code) {
+      const m = {
+        'auth/user-not-found': 'No account found with this email.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/email-already-in-use': 'Email is already registered.',
+        'auth/weak-password': 'Password must be at least 6 characters.',
+        'auth/invalid-email': 'Please enter a valid email.',
+        'auth/too-many-requests': 'Too many attempts. Try again later.',
+        'auth/network-request-failed': 'Network error. Check connection.',
+        'auth/invalid-credential': 'Invalid email or password.'
+      };
+      return m[code] || 'Something went wrong. Please try again.';
+    }
+  </script>
+
+  <!-- REPLACE YOUR_MAPS_API_KEY below -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLkv7GCF2N2LWWgD181RkNOoAj2u1cMpc" async
+    defer></script>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H, particles = [];
+      function resize() { W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
+      function mkP() { return { x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .3, vy: (Math.random() - .5) * .3, size: Math.random() * 1.5 + .5, alpha: Math.random() * .4 + .1, color: Math.random() > .5 ? '0,212,255' : '123,97,255' }; }
+      resize(); for (let i = 0; i < 120; i++) particles.push(mkP());
+      window.addEventListener('resize', resize);
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(99,179,237,0.03)'; ctx.lineWidth = 1;
+        for (let x = 0; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+        for (let y = 0; y < H; y += 80) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+        particles.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = W; if (p.x > W) p.x = 0; if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${p.color},${p.alpha})`; ctx.fill();
+        });
+        particles.forEach((a, i) => particles.slice(i + 1).forEach(b => {
+          const dx = a.x - b.x, dy = a.y - b.y, d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 100) { ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.strokeStyle = `rgba(0,212,255,${.06 * (1 - d / 100)})`; ctx.lineWidth = .5; ctx.stroke(); }
+        }));
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+  </script>
+</body>
+
+</html>

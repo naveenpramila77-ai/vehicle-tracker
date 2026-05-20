@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrackFlow Admin — Live Fleet Dashboard</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --bg: #030712;
+      --panel: #0a0f1e;
+      --border: rgba(99, 179, 237, 0.1);
+      --accent: #00d4ff;
+      --accent2: #7b61ff;
+      --text: #e8f4ff;
+      --muted: #6b8caa;
+      --success: #00e5a0;
+      --danger: #ff4d6d;
+      --warn: #f59e0b;
+      --card: rgba(10, 15, 30, 0.95);
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column
+    }
+
+    /* ─── LOGIN OVERLAY ─── */
+    #admin-login {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+    }
+
+    .admin-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 44px 40px;
+      width: 380px;
+      box-shadow: 0 0 60px rgba(123, 97, 255, 0.1), 0 24px 48px rgba(0, 0, 0, 0.6);
+    }
+
+    .admin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(123, 97, 255, 0.1);
+      border: 1px solid rgba(123, 97, 255, 0.25);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent2);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .admin-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 6px
+    }
+
+    .admin-sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 28px
+    }
+
+    .a-field {
+      margin-bottom: 14px
+    }
+
+    .a-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      margin-bottom: 7px
+    }
+
+    .a-field input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: .2s
+    }
+
+    .a-field input:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 3px rgba(123, 97, 255, 0.1)
+    }
+
+    .a-field input::placeholder {
+      color: var(--muted);
+      opacity: .5
+    }
+
+    .a-btn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: .2s
+    }
+
+    .a-btn:hover {
+      opacity: .9
+    }
+
+    .a-err {
+      background: rgba(255, 77, 109, .1);
+      border: 1px solid rgba(255, 77, 109, .3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #ff7a90;
+      margin-top: 12px;
+      display: none
+    }
+
+    .a-err.show {
+      display: block
+    }
+
+    /* ─── DASHBOARD ─── */
+    #dashboard {
+      flex: 1;
+      display: none;
+      flex-direction: row;
+      overflow: hidden
+    }
+
+    #dashboard.visible {
+      display: flex
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 300px;
+      min-width: 300px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 800
+    }
+
+    .sidebar-logo span {
+      color: var(--accent)
+    }
+
+    .admin-tag {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent2);
+      letter-spacing: .5px;
+      text-transform: uppercase
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border)
+    }
+
+    .stat-box {
+      background: var(--panel);
+      padding: 14px 18px;
+      text-align: center
+    }
+
+    .stat-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent)
+    }
+
+    .stat-lbl {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .4px;
+      margin-top: 2px
+    }
+
+    .search-box {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .search-box input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+      font-family: 'DM Sans', sans-serif
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent)
+    }
+
+    .search-box input::placeholder {
+      color: var(--muted);
+      opacity: .5
+    }
+
+    .users-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px
+    }
+
+    .users-list::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .users-list::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    .users-list::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px
+    }
+
+    .user-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .user-card:hover {
+      background: rgba(0, 212, 255, 0.05);
+      border-color: rgba(0, 212, 255, 0.2)
+    }
+
+    .user-card.selected {
+      background: rgba(0, 212, 255, 0.08);
+      border-color: rgba(0, 212, 255, 0.3)
+    }
+
+    .uc-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px
+    }
+
+    .uc-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0
+    }
+
+    .uc-name {
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .uc-email {
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .uc-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--success);
+      background: rgba(0, 229, 160, 0.08);
+      border: 1px solid rgba(0, 229, 160, 0.2);
+      padding: 3px 8px;
+      border-radius: 100px
+    }
+
+    .uc-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite
+    }
+
+    @keyframes pulse-dot {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .uc-coords {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 6px
+    }
+
+    .uc-time {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    .sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border)
+    }
+
+    .logout-btn {
+      width: 100%;
+      padding: 9px;
+      background: rgba(255, 77, 109, .08);
+      border: 1px solid rgba(255, 77, 109, .2);
+      border-radius: 8px;
+      color: #ff7a90;
+      font-size: 12px;
+      cursor: pointer;
+      transition: .2s
+    }
+
+    .logout-btn:hover {
+      background: rgba(255, 77, 109, .15)
+    }
+
+    /* Map */
+    #map-wrap {
+      flex: 1;
+      position: relative
+    }
+
+    #admin-map {
+      width: 100%;
+      height: 100%
+    }
+
+    .map-overlay {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 18px;
+      min-width: 200px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .map-overlay h4 {
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: .5px
+    }
+
+    .mo-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      margin-bottom: 6px;
+      gap: 8px
+    }
+
+    .mo-row .ml {
+      color: var(--muted)
+    }
+
+    .mo-row .mv {
+      font-weight: 500;
+      font-family: 'DM Mono', monospace
+    }
+
+    .focus-btn {
+      width: 100%;
+      padding: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: .2s
+    }
+
+    .focus-btn:hover {
+      opacity: .9
+    }
+
+    .no-user-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: var(--muted);
+      z-index: 5;
+      pointer-events: none
+    }
+
+    .no-user-msg .icon {
+      font-size: 48px;
+      margin-bottom: 12px
+    }
+
+    .no-user-msg p {
+      font-size: 14px
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ADMIN LOGIN -->
+  <div id="admin-login">
+    <div class="admin-card">
+      <div class="admin-badge">🔐 Admin Access</div>
+      <div class="admin-title">Fleet Dashboard</div>
+      <div class="admin-sub">Sign in with your admin credentials to monitor all vehicles</div>
+      <div class="a-field"><label>Admin Email</label><input id="a-email" type="email"
+          placeholder="admin@trackflow.com" /></div>
+      <div class="a-field"><label>Password</label><input id="a-pass" type="password" placeholder="••••••••" /></div>
+      <button class="a-btn" onclick="adminLogin()">Access Dashboard</button>
+      <div class="a-err" id="a-err"></div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div>
+          <div class="sidebar-logo">Track<span>Flow</span></div>
+          <div class="admin-tag">Admin Panel</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-val" id="total-users">0</div>
+          <div class="stat-lbl">Total Users</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="active-users">0</div>
+          <div class="stat-lbl">Active Now</div>
+        </div>
+      </div>
+      <div class="search-box"><input id="search-input" placeholder="Search by email or name…" oninput="filterUsers()" />
+      </div>
+      <div class="users-list" id="users-list">
+        <div class="empty-state">⏳ Waiting for users to connect…</div>
+      </div>
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="adminLogout()">Sign Out of Admin</button>
+      </div>
+    </aside>
+    <div id="map-wrap">
+      <div id="admin-map"></div>
+      <div class="map-overlay" id="detail-panel" style="display:none">
+        <h4>Selected Vehicle</h4>
+        <div class="mo-row"><span class="ml">User</span><span class="mv" id="d-name"
+            style="font-family:'DM Sans',sans-serif;font-size:11px">—</span></div>
+        <div class="mo-row"><span class="ml">Latitude</span><span class="mv" id="d-lat">—</span></div>
+        <div class="mo-row"><span class="ml">Longitude</span><span class="mv" id="d-lng">—</span></div>
+        <div class="mo-row"><span class="ml">Accuracy</span><span class="mv" id="d-acc">—</span></div>
+        <div class="mo-row"><span class="ml">Updated</span><span class="mv" id="d-time"
+            style="font-family:'DM Sans',sans-serif">—</span></div>
+        <button class="focus-btn" onclick="focusSelected()">📍 Center on Map</button>
+      </div>
+      <div class="no-user-msg" id="no-user-msg">
+        <div class="icon">🛰️</div>
+        <p>Select a user to focus on their location</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js';
+    import { getFirestore, collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js';
+
+    // =====================================================
+    // 🔥 SAME FIREBASE CONFIG AS frontend/index.html
+    // =====================================================
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyCfKWQKoAPMBWlzGkOph3jjPKCoFYz5Ao0",
+      authDomain: "tracker-17e9e.firebaseapp.com",
+      projectId: "tracker-17e9e",
+      storageBucket: "tracker-17e9e.firebasestorage.app",
+      messagingSenderId: "272449623977",
+      appId: "1:272449623977:web:7dc3fcc24203ec6aa8d6b8",
+      measurementId: "G-4KW91JY3VR"
+    };
+    // =====================================================
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let adminMap, markers = {}, allUsers = [], selectedUid = null, unsubLocations = null;
+
+    window.adminLogin = async () => {
+      const email = document.getElementById('a-email').value.trim();
+      const pass = document.getElementById('a-pass').value;
+      const errEl = document.getElementById('a-err');
+      errEl.classList.remove('show');
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } catch (e) {
+        errEl.textContent = friendlyError(e.code);
+        errEl.classList.add('show');
+      }
+    };
+
+    window.adminLogout = async () => {
+      if (unsubLocations) unsubLocations();
+      await signOut(auth);
+    };
+
+    window.filterUsers = () => {
+      const q = document.getElementById('search-input').value.toLowerCase();
+      renderUsersList(allUsers.filter(u => (u.email + u.displayName).toLowerCase().includes(q)));
+    };
+
+    window.focusSelected = () => {
+      if (!selectedUid || !markers[selectedUid]) return;
+      const pos = markers[selectedUid].getPosition();
+      adminMap.panTo(pos);
+      adminMap.setZoom(17);
+    };
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        document.getElementById('admin-login').style.display = 'none';
+        document.getElementById('dashboard').classList.add('visible');
+        initAdminMap();
+        startListening();
+      } else {
+        document.getElementById('admin-login').style.display = 'flex';
+        document.getElementById('dashboard').classList.remove('visible');
+        if (unsubLocations) { unsubLocations(); unsubLocations = null; }
+      }
+    });
+
+    function initAdminMap() {
+      if (adminMap) return;
+      adminMap = new google.maps.Map(document.getElementById('admin-map'), {
+        center: { lat: 20.5937, lng: 78.9629 }, zoom: 5,
+        styles: darkStyle(), mapTypeControl: false, streetViewControl: false
+      });
+    }
+
+    function startListening() {
+      unsubLocations = onSnapshot(collection(db, 'locations'), snapshot => {
+        allUsers = [];
+        snapshot.forEach(docSnap => {
+          const d = docSnap.data();
+          allUsers.push(d);
+          placeOrUpdateMarker(d);
+        });
+
+        // Remove stale markers
+        Object.keys(markers).forEach(uid => {
+          if (!allUsers.find(u => u.uid === uid)) {
+            markers[uid].setMap(null);
+            delete markers[uid];
+          }
+        });
+
+        const fiveMin = Date.now() - 5 * 60 * 1000;
+        const activeCount = allUsers.filter(u => {
+          if (!u.updatedAtISO) return false;
+          return new Date(u.updatedAtISO).getTime() > fiveMin;
+        }).length;
+
+        document.getElementById('total-users').textContent = allUsers.length;
+        document.getElementById('active-users').textContent = activeCount;
+
+        renderUsersList(allUsers);
+        if (selectedUid) updateDetailPanel(allUsers.find(u => u.uid === selectedUid));
+      });
+    }
+
+    function placeOrUpdateMarker(data) {
+      const pos = { lat: data.lat, lng: data.lng };
+      if (markers[data.uid]) {
+        markers[data.uid].setPosition(pos);
+        markers[data.uid]._data = data;
+      } else {
+        const marker = new google.maps.Marker({
+          position: pos, map: adminMap,
+          title: data.email,
+          icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#7b61ff', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 }
+        });
+        marker._data = data;
+        marker.addListener('click', () => selectUser(data.uid));
+        markers[data.uid] = marker;
+      }
+    }
+
+    function renderUsersList(users) {
+      const list = document.getElementById('users-list');
+      if (!users.length) { list.innerHTML = '<div class="empty-state">⏳ No users online yet…</div>'; return; }
+      list.innerHTML = users.map(u => {
+        const initial = (u.displayName || u.email || '?').charAt(0).toUpperCase();
+        const time = u.updatedAtISO ? new Date(u.updatedAtISO).toLocaleTimeString() : '—';
+        const isSelected = u.uid === selectedUid;
+        return `<div class="user-card${isSelected ? ' selected' : ''}" onclick="selectUser('${u.uid}')">
+        <div class="uc-top">
+          <div class="uc-avatar">${initial}</div>
+          <div style="min-width:0">
+            <div class="uc-name">${u.displayName || 'User'}</div>
+            <div class="uc-email">${u.email || ''}</div>
+          </div>
+          <div class="uc-live"><div class="uc-dot"></div>LIVE</div>
+        </div>
+        <div class="uc-coords">${u.lat?.toFixed(5)}, ${u.lng?.toFixed(5)}</div>
+        <div class="uc-time">Updated: ${time}</div>
+      </div>`;
+      }).join('');
+    }
+
+    window.selectUser = (uid) => {
+      selectedUid = uid;
+      const user = allUsers.find(u => u.uid === uid);
+      // Highlight marker
+      Object.entries(markers).forEach(([mid, m]) => {
+        m.setIcon({
+          path: google.maps.SymbolPath.CIRCLE, scale: mid === uid ? 13 : 10,
+          fillColor: mid === uid ? '#00d4ff' : '#7b61ff', fillOpacity: 1, strokeColor: '#fff', strokeWeight: mid === uid ? 3 : 2
+        });
+      });
+      if (user) {
+        adminMap.panTo({ lat: user.lat, lng: user.lng });
+        if (adminMap.getZoom() < 14) adminMap.setZoom(14);
+        updateDetailPanel(user);
+      }
+      document.getElementById('no-user-msg').style.display = 'none';
+      renderUsersList(allUsers);
+    };
+
+    function updateDetailPanel(user) {
+      if (!user) return;
+      const panel = document.getElementById('detail-panel');
+      panel.style.display = 'block';
+      document.getElementById('d-name').textContent = user.displayName || user.email || '—';
+      document.getElementById('d-lat').textContent = user.lat?.toFixed(6) || '—';
+      document.getElementById('d-lng').textContent = user.lng?.toFixed(6) || '—';
+      document.getElementById('d-acc').textContent = user.accuracy ? `±${Math.round(user.accuracy)}m` : '—';
+      document.getElementById('d-time').textContent = user.updatedAtISO ? new Date(user.updatedAtISO).toLocaleTimeString() : '—';
+    }
+
+    function darkStyle() {
+      return [
+        { elementType: "geometry", stylers: [{ color: "#0a0f1e" }] },
+        { elementType: "labels.text.stroke", stylers: [{ color: "#0a0f1e" }] },
+        { elementType: "labels.text.fill", stylers: [{ color: "#6b8caa" }] },
+        { featureType: "road", elementType: "geometry", stylers: [{ color: "#131d2e" }] },
+        { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#1a2e4a" }] },
+        { featureType: "water", elementType: "geometry", stylers: [{ color: "#030712" }] },
+        { featureType: "poi", stylers: [{ visibility: "off" }] },
+        { featureType: "transit", stylers: [{ visibility: "off" }] }
+      ];
+    }
+
+    function friendlyError(code) {
+      const m = {
+        'auth/user-not-found': 'No admin account found.',
+        'auth/wrong-password': 'Incorrect password.',
+        'auth/invalid-credential': 'Invalid email or password.',
+        'auth/too-many-requests': 'Too many attempts. Try again later.'
+      };
+      return m[code] || 'Login failed. Check credentials.';
+    }
+  </script>
+
+  <!-- REPLACE YOUR_MAPS_API_KEY below -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDLkv7GCF2N2LWWgD181RkNOoAj2u1cMpc" async
+    defer></script>
+</body>
+
+</html>
